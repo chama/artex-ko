@@ -1,84 +1,84 @@
-# ARTEX 탐지 규칙 (Suricata / 네트워크)
+# ARTEX 検知ルール (Suricata / ネットワーク)
 
-한국어 · [English](README.md)
+日本語 · [English](README.md)
 
-[Sigma 규칙](../sigma/)의 네트워크 계층 짝입니다. 이 [Suricata](https://suricata.io) 시그니처는
-네트워크 선에서 관측되는 두 가지 ARTEX 산출물을 다루며, 모든 지표는 추정이 아니라 이 저장소
-소스에서 확인한 문자열이나 행동에 근거합니다. 호스트·로그·SIEM 계층은 [`../sigma/`](../sigma/)에
-있고, 전체 그림은 방어 가이드([한국어](../../docs/defense-ko.md) · [English](../../docs/defense-en.md))가
-설명합니다.
+[Sigma ルール](../sigma/)のネットワーク層における対になるものです。この [Suricata](https://suricata.io) シグネチャは、
+ネットワーク上で観測される 2 種類の ARTEX 成果物を対象とし、すべての指標は推測ではなく、このリポジトリの
+ソースで確認した文字列や挙動に基づいています。ホスト・ログ・SIEM 層は [`../sigma/`](../sigma/)にあり、
+全体像は防御ガイド([韓国語](../../docs/defense-ko.md) · [English](../../docs/defense-en.md))が
+説明しています。
 
-## 규칙: [`artex.rules`](artex.rules)
+## ルール: [`artex.rules`](artex.rules)
 
-- **sid 1000001**: `ARTEX enrichment prober User-Agent`. User-Agent 가 `artex-enrich/` 로 시작하는
-  인바운드 HTTP `GET` 입니다(자산 보강 프로버 `enrich/enrich.go:233`). 단건 요청 존재 지표입니다.
-  `classtype: attempted-recon`.
-- **sid 1000002**: `ARTEX enrichment prober high-rate enumeration`. 같은 User-Agent 가
-  `detection_filter` 임계인 **출처당 300초에 30요청** 을 넘는 경우입니다. 단건 규칙이 놓치는, 기계
-  속도로 쏟아내는 빈도입니다. Sigma 상관 규칙 `artex_enrich_scan_velocity` 를 반영합니다.
-  `classtype: attempted-recon`.
-- **sid 1000003**: `ARTEX worker WebFetch User-Agent`. User-Agent 가 `norma/` 로 시작하는 인바운드
-  HTTP 요청입니다(norma SDK 의 WebFetch 도구 `github.com/Autumn-27/norma/tool/webfetch.go`). 이 UA 는 norma 전 버전
-  (v0.1.0–v0.4.3, 검증 완료)에 걸쳐 하드코딩되어 있으며, 기록 프록시가 요청 헤더를 수정하지
-  않으므로(`traffic/traffic.go`) 대상 호스트 와이어에 그대로 도달합니다. 보강 프로버와 달리
-  **공격 단계**(능동적 취약점 프로빙) 에서 발화합니다. `classtype: attempted-recon`.
+- **sid 1000001**: `ARTEX enrichment prober User-Agent`。User-Agent が `artex-enrich/` で始まる
+  インバウンド HTTP `GET` です(アセットエンリッチプローバー `enrich/enrich.go:233`)。単発リクエストの存在指標です。
+  `classtype: attempted-recon`。
+- **sid 1000002**: `ARTEX enrichment prober high-rate enumeration`。同じ User-Agent が
+  `detection_filter` のしきい値である **送信元あたり 300 秒間に 30 リクエスト** を超える場合です。単発ルールが見逃す、機械
+  速度で大量に送られる頻度を捉えます。Sigma 相関ルール `artex_enrich_scan_velocity` に対応します。
+  `classtype: attempted-recon`。
+- **sid 1000003**: `ARTEX worker WebFetch User-Agent`。User-Agent が `norma/` で始まるインバウンド
+  HTTP リクエストです(norma SDK の WebFetch ツール `github.com/Autumn-27/norma/tool/webfetch.go`)。この UA は norma の全バージョン
+  (v0.1.0–v0.4.3、検証済み)にわたってハードコードされており、記録プロキシがリクエストヘッダーを変更
+  しないため(`traffic/traffic.go`)、対象ホストのワイヤにそのまま到達します。エンリッチプローバーと異なり、
+  **攻撃段階**(能動的な脆弱性プロービング)で発火します。`classtype: attempted-recon`。
 
-## 범위와 정직함: 배포 전에 읽으십시오
+## 範囲と正直さ: デプロイ前にお読みください
 
-- **두 가지 ARTEX User-Agent 가 네트워크에서 관측됩니다.** 보강 프로버는 정찰 단계에서
-  `artex-enrich/1.0`(`enrich/enrich.go:233`)을, norma SDK 의 WebFetch 도구는 공격 단계에서
-  `norma/0.4`(`github.com/Autumn-27/norma/tool/webfetch.go`)를 보냅니다. 기록 프록시(`traffic/traffic.go`)는 요청 헤더를
-  변경하지 않으므로 두 UA 모두 대상 와이어에 도달합니다. 그 외 worker 도구(Bash 하위 프로세스인
-  `curl`, `nmap` 등)는 자체 User-Agent 를 사용하므로, 일반 스캐너 시그니처와
-  [`../sigma/`](../sigma/)의 행동 기반 SIEM 규칙으로 탐지하십시오.
-- **User-Agent 는 평문에서만 보입니다.** 트래픽이 평문 HTTP 이거나 TLS 를 종단하는 프록시·WAF 에서
-  검사될 때 나타납니다. 종단 간 TLS 는 이것을 암호화하므로, 실제로 HTTP 요청 버퍼를 볼 수 있는
-  자리에 배포하십시오.
-- **정적 User-Agent 는 운영자가 바꿀 수 있으므로**, 없다고 해서 안전하다는 뜻은 **아닙니다**.
-  오래가는 신호는 행동, 곧 속도와 폭입니다. sid 1000002(그리고 Sigma 상관 계층)가 속도를 기준으로
-  삼는 이유, 그리고 순수 웹 다단계 탐지가 환경별 기본 규칙을 필요로 하는 이유가 여기에 있습니다.
-- **의도적으로 뺀 것.** 자가 업데이트 User-Agent `artex-selfupdate` 는 GitHub 로 HTTPS 를 타고 가므로
-  네트워크에서 관측되지 않습니다(TLS SNI 만으로는 경보를 걸기에 너무 흔합니다). 감사 통제 마커는
-  대상을 향하는 트래픽이 아니라 운영자 측 로그 산출물이므로,
-  [`../sigma/artex_guard_audit_framing.yml`](../sigma/artex_guard_audit_framing.yml)로 탐지하십시오.
-  서버 포트 `:8787` 과 기록 프록시 `127.0.0.1:8788`(`cmd/artex/main.go`)은 네트워크 시그니처가
-  아니라 호스트 포렌식용(`ss`·`netstat`)입니다.
+- **2 種類の ARTEX User-Agent がネットワークで観測されます。** エンリッチプローバーは偵察段階で
+  `artex-enrich/1.0`(`enrich/enrich.go:233`)を、norma SDK の WebFetch ツールは攻撃段階で
+  `norma/0.4`(`github.com/Autumn-27/norma/tool/webfetch.go`)を送信します。記録プロキシ(`traffic/traffic.go`)はリクエストヘッダーを
+  変更しないため、どちらの UA も対象のワイヤに到達します。それ以外の worker ツール(Bash サブプロセスである
+  `curl`、`nmap` など)は独自の User-Agent を使用するため、一般的なスキャナーシグネチャと
+  [`../sigma/`](../sigma/)の行動ベースの SIEM ルールで検知してください。
+- **User-Agent は平文でのみ見えます。** 通信が平文 HTTP であるか、TLS を終端するプロキシ・WAF で
+  検査される場合に現れます。エンドツーエンドの TLS はこれを暗号化するため、実際に HTTP リクエストバッファを見られる
+  位置にデプロイしてください。
+- **静的な User-Agent はオペレーターが変更できるため**、ないからといって安全という意味では**ありません**。
+  長持ちするシグナルは行動、すなわち速度と幅です。sid 1000002(および Sigma 相関層)が速度を基準に
+  している理由、そして純粋な Web 多段階の検知が環境ごとのベースラインルールを必要とする理由がここにあります。
+- **意図的に除外したもの。** 自己アップデート User-Agent `artex-selfupdate` は GitHub への HTTPS に乗るため、
+  ネットワークでは観測されません(TLS SNI だけではアラートを上げるには一般的すぎます)。監査統制マーカーは
+  対象に向かう通信ではなくオペレーター側のログ成果物であるため、
+  [`../sigma/artex_guard_audit_framing.yml`](../sigma/artex_guard_audit_framing.yml)で検知してください。
+  サーバーポート `:8787` と記録プロキシ `127.0.0.1:8788`(`cmd/artex/main.go`)は、ネットワークシグネチャではなく
+  ホストフォレンジック用(`ss`・`netstat`)です。
 
-## 검증과 테스트
+## 検証とテスト
 
-Suricata 8 로 검증했습니다. 적재 테스트는 트래픽이 필요 없고 항상 돌아갑니다.
+Suricata 8 で検証しました。ロードテストはトラフィックが不要で、常に実行できます。
 
 ```sh
-# 문법 + 엔진 적재 테스트 (기대: "Configuration provided was successfully loaded")
+# 文法 + エンジンロードテスト (期待値: "Configuration provided was successfully loaded")
 docker run --rm -v "$PWD/detections/suricata":/r -w /r jasonish/suricata:latest \
   suricata -T -S artex.rules -l /tmp --init-errors-fatal
 ```
 
-`--init-errors-fatal` 은 파싱은 되지만 초기화에 실패하는 규칙도 하드 에러로 만들어, 조용히 버려진
-시그니처가 있으면 적재 테스트가 통과하지 못하게 합니다.
+`--init-errors-fatal` は、パースはできても初期化に失敗するルールもハードエラーにし、黙って破棄された
+シグネチャがあればロードテストが通らないようにします。
 
-규칙이 실제로 발화하는지 확인하려면, 재현 가능한 회귀 테스트가 [`../tests/suricata/`](../tests/suricata/)에
-있습니다. 먼저 같은 적재 점검을 돌리고, scapy 로 결정적 캡처를 합성한 뒤 그 위에서 `suricata -r` 를
-돌려 경보 수를 단언합니다. Docker 만 있으면 됩니다.
+ルールが実際に発火するかを確認するには、再現可能な回帰テストが [`../tests/suricata/`](../tests/suricata/)に
+あります。まず同じロード確認を実行し、scapy で決定的なキャプチャを合成した後、その上で `suricata -r` を
+実行してアラート数をアサートします。Docker さえあれば動作します。
 
 ```sh
 detections/tests/suricata/run.sh
 ```
 
-sid 1000001 이 프로브마다 정확히 한 번씩 발화하고(35플로 캡처에서 35회), sid 1000002 가 300초에 30
-임계를 넘으며(Suricata 8.0.7 에서 **5**회 경보, 31~35번째 플로), 같은 캡처를 양성(benign) 브라우저
-User-Agent 로 돌리면 경보가 **0** 임을 단언합니다. 시그니처가 특이함을 확인하는 것입니다.
-[`../tests/README.ko.md`](../tests/README.ko.md)를 참조하십시오. 대신 자신의 트래픽으로 확인하려면, 로컬
-서버에 대해 루프백 `curl -A 'artex-enrich/1.0'` 을 캡처해 경보를 읽으십시오.
+sid 1000001 がプローブごとにちょうど 1 回ずつ発火すること(35 フローのキャプチャで 35 回)、sid 1000002 が 300 秒間 30 件の
+しきい値を超えること(Suricata 8.0.7 で **5** 回アラート、31~35 番目のフロー)、同じキャプチャを良性(benign)なブラウザ
+User-Agent で実行するとアラートが **0** であることをアサートします。シグネチャが特異であることを確認するものです。
+[`../tests/README.ko.md`](../tests/README.ko.md)を参照してください。代わりに自分のトラフィックで確認するには、ローカル
+サーバーに対するループバック `curl -A 'artex-enrich/1.0'` をキャプチャしてアラートを読んでください。
 
 ```sh
 suricata -r enrich.pcap -S artex.rules -l out && \
-  grep -c '"signature_id":1000001' out/eve.json    # 존재: 프로브마다 한 번
+  grep -c '"signature_id":1000001' out/eve.json    # 存在: プローブごとに 1 回
 ```
 
-## 기여
+## 貢献
 
-탐지 기여를 환영합니다. 새 규칙은 모든 지표를 관측 가능한 사실에 근거해 두고, 한계를 주석에
-밝히며, `suricata -T` 를 깨끗이 통과하고, 공격 안내로 읽히는 내용을 담지 않아야 합니다.
-[`../../CONTRIBUTING.md`](../../CONTRIBUTING.md)와 [`../sigma/`](../sigma/)의 Sigma 계층 /
-[`../README.ko.md`](../README.ko.md)를 참조하십시오.
+検知への貢献を歓迎します。新しいルールは、すべての指標を観測可能な事実に基づかせ、限界をコメントに
+明記し、`suricata -T` をクリーンに通過し、攻撃の手引きと読める内容を含まないようにしてください。
+[`../../CONTRIBUTING.md`](../../CONTRIBUTING.md)と [`../sigma/`](../sigma/)の Sigma 層 /
+[`../README.ko.md`](../README.ko.md)を参照してください。

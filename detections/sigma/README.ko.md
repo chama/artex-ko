@@ -1,124 +1,124 @@
-# ARTEX 탐지 규칙 (Sigma / 호스트·로그·SIEM)
+# ARTEX 検知ルール (Sigma / ホスト・ログ・SIEM)
 
-한국어 · [English](README.md)
+日本語 · [English](README.md)
 
-이 디렉터리는 ARTEX 탐지 묶음에서 호스트·로그·SIEM 계층을 맡습니다. 여기 실린
-[Sigma](https://sigmahq.io) 규칙은 방어 가이드([한국어](../../docs/defense-ko.md) ·
-[English](../../docs/defense-en.md)) 4절의 의사 규칙을 벤더 중립 형식으로 정식화한 것이고, 각자의
-SIEM·EDR 질의 언어로 변환해 씁니다. 모든 지표는 추정이 아니라 이 저장소 소스에서 실제로 확인한
-문자열이나 행동에 근거합니다. 네트워크 계층은 [`../suricata/`](../suricata/)에 있고, ATT&CK 레이어와
-지표 CSV·MISP 내보내기, 호스트 분류 스크립트를 포함한 전체 탐지 묶음은
-[`../README.ko.md`](../README.ko.md)가 색인합니다. 모든 규칙은 자신이 소유하거나 서면 허가를 받은
-시스템을 지키는 **방어·탐지 목적에만** 사용하십시오.
+このディレクトリは ARTEX 検知セットのうち、ホスト・ログ・SIEM 層を担当します。ここに収録した
+[Sigma](https://sigmahq.io) ルールは、防御ガイド([韓国語](../../docs/defense-ko.md) ·
+[English](../../docs/defense-en.md))4 節の疑似ルールをベンダー中立の形式で正式化したもので、それぞれの
+SIEM・EDR のクエリ言語に変換して使います。すべての指標は推測ではなく、このリポジトリのソースで実際に確認した
+文字列や挙動に基づいています。ネットワーク層は [`../suricata/`](../suricata/)にあり、ATT&CK レイヤーや
+指標 CSV・MISP エクスポート、ホストトリアージスクリプトを含む検知セット全体は
+[`../README.ko.md`](../README.ko.md)が索引化しています。すべてのルールは、自身が所有する、または書面による許可を得た
+システムを守る**防御・検知の目的にのみ**使用してください。
 
-## 원자(atomic) 규칙
+## アトミック(atomic)ルール
 
-규칙 하나가 관측 가능한 사실 하나에 대응합니다. 개별로 변환해도 되고, 트리 전체의 일부로 변환해도
-됩니다.
+1 つのルールが 1 つの観測可能な事実に対応します。個別に変換しても、ツリー全体の一部として変換しても
+かまいません。
 
 - **[`artex_enrich_user_agent.yml`](artex_enrich_user_agent.yml)**: *ARTEX Asset Enrichment Probe
-  User-Agent*. 자산 보강(`enrich/enrich.go`)이 보내는 인바운드 `artex-enrich/1.0` User-Agent 입니다.
-  대상 측에서 관측하는 보조 지표입니다. `level: high`.
+  User-Agent*。アセットエンリッチ(`enrich/enrich.go`)が送信するインバウンドの `artex-enrich/1.0` User-Agent です。
+  対象側で観測する補助指標です。`level: high`。
 - **[`artex_selfupdate_egress.yml`](artex_selfupdate_egress.yml)**: *ARTEX Self-Update Egress
-  User-Agent*. 자가 업데이트 루틴(`selfupdate/github.go`)이 내보내는 아웃바운드 `artex-selfupdate`
-  User-Agent 입니다. 호스트·포렌식 egress 지표입니다. `level: medium`.
+  User-Agent*。自己アップデートルーチン(`selfupdate/github.go`)が発するアウトバウンドの `artex-selfupdate`
+  User-Agent です。ホスト・フォレンジックの egress 指標です。`level: medium`。
 - **[`artex_guard_audit_framing.yml`](artex_guard_audit_framing.yml)**: *ARTEX Platform Guard
-  Audit-Log Framing*. 도구 호출이 차단될 때 감사 로그에 기록되는 플랫폼 가드 통제 마커입니다
-  (`guard/guard.go`). 호스트·포렌식 지표입니다. `level: high`.
+  Audit-Log Framing*。ツール呼び出しがブロックされたときに監査ログへ記録されるプラットフォームガードの統制マーカーです
+  (`guard/guard.go`)。ホスト・フォレンジック指標です。`level: high`。
 - **[`artex_recording_proxy_ca.yml`](artex_recording_proxy_ca.yml)**: *ARTEX Recording-Proxy MITM CA
-  Certificate Artifact*. 기록 프록시가 `_ca/mitmproxy-ca-cert.pem` 배치로 생성하는 MITM CA 파일입니다
-  (`traffic/traffic.go`). 호스트·포렌식 산출물이며, 파일명 자체는 단독 실행 mitmproxy 와도 공유되므로
-  사냥 단서(hunting lead)로 취급합니다. `level: medium`.
+  Certificate Artifact*。記録プロキシが `_ca/mitmproxy-ca-cert.pem` に配置して生成する MITM CA ファイルです
+  (`traffic/traffic.go`)。ホスト・フォレンジックの成果物で、ファイル名自体は単独で動作する mitmproxy とも共有されるため、
+  ハンティングの手がかり(hunting lead)として扱います。`level: medium`。
 - **[`destructive_command_hunting.yml`](destructive_command_hunting.yml)**: *Destructive Command
-  Execution (ARTEX Guard-List Hunting)*. ARTEX 가드의 내장 거부 목록(`db/db.go` 시드)을 반영한 파괴적
-  셸·DB 명령입니다. ARTEX 고유 시그니처가 **아니라** 일반 사냥 단서입니다. `level: medium`.
+  Execution (ARTEX Guard-List Hunting)*。ARTEX ガードの内蔵拒否リスト(`db/db.go` シード)を反映した破壊的な
+  シェル・DB コマンドです。ARTEX 固有のシグネチャでは**なく**、汎用的なハンティングの手がかりです。`level: medium`。
 
-## 상관(correlation) 규칙 (행동 기반) · [`correlation/`](correlation/)
+## 相関(correlation)ルール (行動ベース) · [`correlation/`](correlation/)
 
-정적 문자열은 바꿀 수 있지만 행동은 숨기기가 더 어렵습니다. 이 Sigma **상관** 규칙들은 방어 가이드
-4.1~4.2절과 4.4절의 행동 기반 계층을 정식화합니다. 각 규칙은 위의 원자 규칙 하나를 `id` 로 참조하므로,
-상관 파일 하나가 아니라 **`sigma/` 트리 전체를 변환해야** 참조가 풀립니다([Sigma 테스트](../tests/sigma/)가
-바로 이 의존 관계를 단언합니다).
+静的な文字列は変更できますが、行動は隠すのがより困難です。これらの Sigma **相関**ルールは、防御ガイド
+4.1~4.2 節と 4.4 節の行動ベース層を正式化したものです。各ルールは上記のアトミックルールの 1 つを `id` で参照するため、
+相関ファイル 1 つではなく **`sigma/` ツリー全体を変換する必要があります**(参照が解決されるように。[Sigma テスト](../tests/sigma/)が
+まさにこの依存関係をアサートします)。
 
 - **[`correlation/artex_enrich_scan_velocity.yml`](correlation/artex_enrich_scan_velocity.yml)**:
-  *Enrichment Scan Velocity*. 한 출처가 짧은 창 안에 `artex-enrich/1.0` 프로브를 몰아치는 경우입니다
-  (보강은 동시성 4로, 속도 제한 없이 돕니다). 단건 규칙이 놓치는 속도를 잡습니다. `event_count`,
-  `level: high`.
+  *Enrichment Scan Velocity*。1 つの送信元が短いウィンドウ内に `artex-enrich/1.0` プローブを大量に送る場合です
+  (エンリッチは並行度 4 で、レート制限なしに動作します)。単発ルールが見逃す速度を捉えます。`event_count`、
+  `level: high`。
 - **[`correlation/artex_enrich_fanout.yml`](correlation/artex_enrich_fanout.yml)**: *Enrichment
-  Fan-Out*. 한 출처가 보강 User-Agent 를 서로 다른 여러 호스트로 퍼뜨리는 경우입니다. 요청량이 아니라
-  접촉한 서로 다른 호스트 수가 신호이며, 자산 목록을 기계 속도로 훑는 폭을 잡습니다. `value_count`,
-  `level: high`.
+  Fan-Out*。1 つの送信元がエンリッチ User-Agent を異なる複数のホストへ拡散する場合です。リクエスト量ではなく
+  接触した異なるホスト数がシグナルであり、アセット一覧を機械速度で走査する幅を捉えます。`value_count`、
+  `level: high`。
 - **[`correlation/artex_guard_block_burst.yml`](correlation/artex_guard_block_burst.yml)**:
-  *Guard-Block Burst*. 한 호스트에서 플랫폼 가드 통제 마커가 반복되는 경우입니다. 마커를 인용만 한
-  문서가 아니라, 실제로 가동 중인 ARTEX 실행이 자기 가드를 건드리는 상황을 가리킵니다. `event_count`,
-  `level: high`.
+  *Guard-Block Burst*。1 つのホストでプラットフォームガードの統制マーカーが繰り返される場合です。マーカーを引用しただけの
+  文書ではなく、実際に稼働中の ARTEX の実行が自身のガードに触れている状況を示します。`event_count`、
+  `level: high`。
 - **[`correlation/artex_guard_marker_then_destructive.yml`](correlation/artex_guard_marker_then_destructive.yml)**:
-  *Guard Marker With Destructive Command*. 가드 마커와 파괴적 명령이 한 호스트에서 한 창 안에 함께
-  나타나는 경우입니다(방어 가이드 4.2절, 다단계). ARTEX 고유 마커를 원래 일반적인 파괴적 명령 신호와
-  결합하므로 특이도가 올라갑니다. `temporal`, `level: high`.
+  *Guard Marker With Destructive Command*。ガードマーカーと破壊的コマンドが 1 つのホストで 1 つのウィンドウ内に共に
+  現れる場合です(防御ガイド 4.2 節、多段階)。ARTEX 固有のマーカーを、本来は汎用的な破壊的コマンドのシグナルと
+  組み合わせるため、特異度が上がります。`temporal`、`level: high`。
 
-임계값과 창은 보수적인 기본값이므로, 자신의 기준선에 맞게 조정하십시오. 순수 웹 다단계 경우(열거 →
-프로빙 → 인증)는 여전히 환경별 기본 규칙이 필요합니다. 그 패턴은 ARTEX 고유 User-Agent 하나로
-환원되지 않기 때문입니다. 시작점으로 쓸 일반 행동 기반 기본 템플릿은 [방어 가이드 4.2절](../../docs/defense-ko.md)에
-있으며, ARTEX 소스에 근거를 둘 수 없어 이 검증된 트리에서는 의도적으로 뺐습니다.
+しきい値とウィンドウは保守的な既定値ですので、自身のベースラインに合わせて調整してください。純粋な Web 多段階のケース(列挙 →
+プロービング → 認証)は、依然として環境ごとのベースラインルールが必要です。そのパターンは ARTEX 固有の User-Agent 1 つには
+還元されないためです。出発点として使える汎用的な行動ベースのベースラインテンプレートは[防御ガイド 4.2 節](../../docs/defense-ko.md)に
+あり、ARTEX のソースに根拠を置けないため、この検証済みツリーからは意図的に除外しています。
 
-## 범위와 정직함: 배포 전에 읽으십시오
+## 範囲と正直さ: デプロイ前にお読みください
 
-- **정적 지표는 바꿀 수 있습니다.** 운영자가 User-Agent 를 바꾸거나 CA 파일을 지울 수 있으므로, 원자
-  지표가 없다고 해서 안전하다는 뜻은 **아닙니다**. 오래가는 신호는 `correlation/` 규칙이 기준으로 삼는
-  행동입니다. 한 출처가 정찰에서 열거, 프로빙, 인증·주입 시도로 이어 가며, 응답에 적응하고, 쉬지 않고
-  도는 흐름이 그것입니다.
-- **파괴적 명령 규칙은 일반 사냥입니다.** ARTEX 가드 거부 목록을 반영하지만, 같은 명령을 정당한
-  관리자도 실행합니다. 적중은 단서로 다루고, 자신의 환경을 허용 목록으로 걸러 내며, 그것만으로 ARTEX
-  라고 단정하지 마십시오.
-- **포트와 스키마는 네트워크가 아니라 호스트 포렌식입니다.** 서버 기본 포트 `:8787` 과 기록 프록시
-  `127.0.0.1:8788`(`cmd/artex/main.go`), 그리고 PostgreSQL 탐색 그래프 스키마는 의심 호스트에서 직접
-  확인하는 편이 낫습니다. 그래서 시끄러운 규칙 대신 [지표 CSV](../indicators/)와
-  [호스트 분류 스크립트](../triage/)로 제공합니다.
-- **`logsource` 와 필드명은 일반값입니다.** 규칙은 일반 `category`·`product` 로그 소스와 필드명
-  (`cs-user-agent`, `CommandLine`, `TargetFilename`)을 씁니다. 변환 시 파이프라인(`-p`)으로 자신의
-  제품 스키마에 매핑하십시오. 아래 백엔드 설명을 참조하십시오.
+- **静的指標は変更できます。** オペレーターが User-Agent を変更したり CA ファイルを削除したりできるため、アトミック
+  指標がないからといって安全という意味では**ありません**。長持ちするシグナルは、`correlation/` ルールが基準としている
+  行動です。1 つの送信元が偵察から列挙、プロービング、認証・インジェクション試行へと進み、応答に適応し、休まず
+  動き続ける流れがそれです。
+- **破壊的コマンドルールは汎用的なハンティングです。** ARTEX ガードの拒否リストを反映していますが、同じコマンドを正当な
+  管理者も実行します。ヒットは手がかりとして扱い、自身の環境を許可リストで絞り込み、それだけで ARTEX
+  と断定しないでください。
+- **ポートとスキーマはネットワークではなくホストフォレンジックです。** サーバーの既定ポート `:8787` と記録プロキシ
+  `127.0.0.1:8788`(`cmd/artex/main.go`)、そして PostgreSQL の探索グラフスキーマは、不審なホストで直接
+  確認するほうが適しています。そのため、ノイズの多いルールの代わりに[指標 CSV](../indicators/)と
+  [ホストトリアージスクリプト](../triage/)として提供しています。
+- **`logsource` とフィールド名は一般値です。** ルールは一般的な `category`・`product` のログソースとフィールド名
+  (`cs-user-agent`、`CommandLine`、`TargetFilename`)を使います。変換時にパイプライン(`-p`)で自身の
+  製品スキーマにマッピングしてください。下記のバックエンドの説明を参照してください。
 
-## 검증과 변환
+## 検証と変換
 
-[sigma-cli](https://github.com/SigmaHQ/sigma-cli)(pySigma)로 검증했습니다. 저장소 루트에서 실행합니다.
+[sigma-cli](https://github.com/SigmaHQ/sigma-cli)(pySigma)で検証しました。リポジトリのルートで実行します。
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
 pip install sigma-cli
 
-# 구조 + 모범 사례 검증 (기대: 0 errors, 0 issues)
+# 構造 + ベストプラクティス検証 (期待値: 0 errors, 0 issues)
 sigma check detections/sigma/
 
-# 이 규칙 세트의 문서화된 기준선으로 SigmaHQ 관례 전체를 검사 (기대: 0 issues)
+# このルールセットの文書化されたベースラインで SigmaHQ の慣例全体を検査 (期待値: 0 issues)
 pip install pySigma-validators-sigmahq
 sigma check --validation-config detections/tests/sigma_lint/validators.yml detections/sigma/
 
-# 상관 규칙이 참조하는 원자 규칙을 풀 수 있도록 트리 전체를 변환
+# 相関ルールが参照するアトミックルールを解決できるようツリー全体を変換
 sigma plugin install splunk
 sigma convert -t splunk --without-pipeline detections/sigma/
 ```
 
-백엔드마다 상관 규칙 지원이 다르므로 `-t` 선택이 중요합니다. Splunk, Elasticsearch EQL, Grafana Loki 는
-트리 전체를 변환하고, Elasticsearch Lucene, OpenSearch, 마이크로소프트 `kusto` 백엔드는 원자 규칙
-다섯 개만 변환합니다(창은 제품에서 네이티브로 표현합니다). 백엔드별 실측 표와 `--without-pipeline` ·
-`-p` 필드 매핑 설명은 [`../README.ko.md`](../README.ko.md)에 있고,
-[`../tests/sigma_backends/`](../tests/sigma_backends/)가 재현합니다.
+バックエンドごとに相関ルールのサポートが異なるため、`-t` の選択が重要です。Splunk、Elasticsearch EQL、Grafana Loki は
+ツリー全体を変換し、Elasticsearch Lucene、OpenSearch、Microsoft `kusto` バックエンドはアトミックルール
+5 つだけを変換します(ウィンドウは製品側でネイティブに表現します)。バックエンド別の実測表と `--without-pipeline`・
+`-p` フィールドマッピングの説明は [`../README.ko.md`](../README.ko.md)にあり、
+[`../tests/sigma_backends/`](../tests/sigma_backends/)が再現します。
 
-## 테스트
+## テスト
 
-[`../tests/`](../tests/) 아래 재현 가능한 네 스위트가 이 규칙들을 다루며, 각각 Docker 만 있으면 됩니다.
-[`sigma/`](../tests/sigma/)는 검증과 트리 전체 컴파일, 그리고 상관 규칙이 단독으로는 변환에 실패함을
-단언하고, [`sigma_match/`](../tests/sigma_match/)는 규칙이 악성 샘플에 실제로 발화하고 양성 샘플에는
-침묵하는지 확인하며, [`sigma_backends/`](../tests/sigma_backends/)는 백엔드 다섯 종의 이식성을,
-[`sigma_lint/`](../tests/sigma_lint/)는 SigmaHQ 검증기 기준선 전체(0 issues)를 확인합니다.
-[`../tests/README.ko.md`](../tests/README.ko.md)를 참조하십시오.
+[`../tests/`](../tests/)配下の再現可能な 4 つのスイートがこれらのルールを扱い、いずれも Docker さえあれば動作します。
+[`sigma/`](../tests/sigma/)は検証とツリー全体のコンパイル、そして相関ルールが単独では変換に失敗することを
+アサートし、[`sigma_match/`](../tests/sigma_match/)はルールが悪意のあるサンプルで実際に発火し、良性サンプルでは
+沈黙することを確認し、[`sigma_backends/`](../tests/sigma_backends/)は 5 種のバックエンドでの移植性を、
+[`sigma_lint/`](../tests/sigma_lint/)は SigmaHQ バリデーターのベースライン全体(0 issues)を確認します。
+[`../tests/README.ko.md`](../tests/README.ko.md)を参照してください。
 
-## 기여
+## 貢献
 
-탐지 기여를 환영합니다. 새 규칙은 모든 지표를 관측 가능한 사실에 근거해 두고, 한계를 `description` 에
-밝히며, SigmaHQ 검증기 기준선을 깨끗이 통과하고
-(`sigma check --validation-config ../tests/sigma_lint/validators.yml .`), 공격 안내로 읽히는 내용을
-담지 않아야 합니다. [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md)와
-[`../suricata/`](../suricata/)의 네트워크 계층, 그리고 [`../README.ko.md`](../README.ko.md)를
-참조하십시오.
+検知への貢献を歓迎します。新しいルールは、すべての指標を観測可能な事実に基づかせ、限界を `description` に
+明記し、SigmaHQ バリデーターのベースラインをクリーンに通過し
+(`sigma check --validation-config ../tests/sigma_lint/validators.yml .`)、攻撃の手引きと読める内容を
+含まないようにしてください。[`../../CONTRIBUTING.md`](../../CONTRIBUTING.md)と
+[`../suricata/`](../suricata/)のネットワーク層、そして [`../README.ko.md`](../README.ko.md)を
+参照してください。
