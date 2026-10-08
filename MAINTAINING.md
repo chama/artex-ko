@@ -1,6 +1,6 @@
 # 上流との同期と翻訳ドリフトの防止（メンテナー向けガイド）
 
-한국어 · [English](MAINTAINING.en.md)
+日本語 · [English](MAINTAINING.en.md)
 
 このドキュメントは、**メンテナー**が元リポジトリ [Autumn-27/ARTEX](https://github.com/Autumn-27/ARTEX) の
 変更に追随しながら、韓国語ローカライズを維持する手順をまとめたものです。貢献の範囲・法的責任・
